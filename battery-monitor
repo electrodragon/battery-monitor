@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+SERVICE_NAME="battery-monitor"
+INSTALL_DIR="/opt/battery-monitor"
+
+show_help() {
+    cat <<'HELP'
+Battery Monitor — alerts you when battery is full and charger is still plugged.
+
+USAGE
+  battery-monitor [command]
+
+COMMANDS
+  help                Show this help message
+  run                 Run the monitor in foreground (for testing)
+  install             Install the service system-wide (requires sudo)
+  uninstall           Remove the service from the system (requires sudo)
+  status              Check if the service is running
+  start               Start the service (via systemctl)
+  stop                Stop the service (via systemctl)
+  restart             Restart the service (via systemctl)
+  logs                Follow the service logs (journalctl -f)
+
+REQUIREMENTS
+  feh                 Display full-screen wallpaper
+  mpv (or ffplay)     Play alert sound in loop
+
+SETUP
+  1. Run:   sudo battery-monitor install
+  2. Place assets in /opt/battery-monitor/:
+       battery_full_wallpaper.jpg
+       battery_full_alert.wav
+  3. Run:   sudo systemctl restart battery-monitor
+
+The monitor polls every 5 seconds. When /sys/class/power_supply/BAT0/status
+is "Full" and AC is plugged, it raises volume to 80%, shows a full-screen
+wallpaper, and loops the alert sound — all until you unplug.
+HELP
+}
+
+case "${1:-help}" in
+    help|--help|-h)
+        show_help
+        ;;
+    run)
+        exec "$SCRIPT_DIR/battery_monitor.py"
+        ;;
+    install)
+        exec sudo "$SCRIPT_DIR/install.sh"
+        ;;
+    uninstall)
+        exec sudo "$SCRIPT_DIR/uninstall.sh"
+        ;;
+    status)
+        exec systemctl status "$SERVICE_NAME"
+        ;;
+    start)
+        exec sudo systemctl start "$SERVICE_NAME"
+        ;;
+    stop)
+        exec sudo systemctl stop "$SERVICE_NAME"
+        ;;
+    restart)
+        exec sudo systemctl restart "$SERVICE_NAME"
+        ;;
+    logs)
+        exec sudo journalctl -u "$SERVICE_NAME" -f
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        echo "Run 'battery-monitor help' for usage." >&2
+        exit 1
+        ;;
+esac

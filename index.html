@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battery Monitor</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --fg: #c9d1d9;
+      --accent: #58a6ff;
+      --border: #30363d;
+      --card: #161b22;
+      --green: #3fb950;
+      --orange: #d29922;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+    header { text-align: center; padding: 4rem 0 2rem; }
+    header h1 { font-size: 2.5rem; color: #fff; }
+    header p { font-size: 1.1rem; color: #8b949e; margin-top: 0.5rem; }
+    .badge { display: inline-block; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.75rem; font-size: 0.85rem; margin: 0.5rem 0; }
+    .badge.linux { border-color: var(--orange); color: var(--orange); }
+    section { margin: 3rem 0; }
+    h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #fff; }
+    p, li { color: var(--fg); }
+    ul { padding-left: 1.5rem; }
+    li { margin: 0.35rem 0; }
+    code {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.15rem 0.4rem;
+      font-size: 0.9em;
+    }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; }
+    .install-cmd {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: #1c2128; border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.75rem 1rem; margin: 1rem 0;
+    }
+    .install-cmd code { flex: 1; background: none; border: none; font-size: 0.85rem; }
+    .copy-btn {
+      background: var(--accent); color: #fff; border: none; border-radius: 4px;
+      padding: 0.35rem 1rem; cursor: pointer; font-size: 0.85rem; white-space: nowrap;
+    }
+    .copy-btn:hover { filter: brightness(1.15); }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+    th { color: #8b949e; font-weight: 600; font-size: 0.85rem; }
+    td { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.9rem; }
+    .footer { text-align: center; padding: 2rem 0; color: #8b949e; font-size: 0.9rem; border-top: 1px solid var(--border); margin-top: 3rem; }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge linux">Linux</span>
+      <h1>Battery Monitor</h1>
+      <p>Alerts you with a full-screen wallpaper and looping sound when your laptop battery is fully charged while the charger is still plugged in.</p>
+    </header>
+
+    <section>
+      <h2>Quick Install</h2>
+      <div class="install-cmd">
+        <code>curl -fsSL 'https://raw.githubusercontent.com/electrodragon/battery-monitor/main/install_battery_monitor.sh' | sudo bash</code>
+        <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+      </div>
+      <p>After install, use <code>battery-monitor &lt;command&gt;</code> to control the service.</p>
+    </section>
+
+    <section>
+      <h2>Requirements</h2>
+      <ul>
+        <li><strong>feh</strong> &mdash; displays wallpaper (<code>sudo dnf install feh</code>)</li>
+        <li><strong>mpv</strong>, <strong>ffplay</strong>, or <strong>paplay</strong> &mdash; plays alert sound</li>
+        <li><strong>pactl</strong> or <strong>amixer</strong> &mdash; sets volume to 80% on alert</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Usage</h2>
+      <pre><code>battery-monitor [command]</code></pre>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td>help</td><td>Show help message</td></tr>
+        <tr><td>run</td><td>Run in foreground (testing)</td></tr>
+        <tr><td>install</td><td>Install system-wide service (requires sudo)</td></tr>
+        <tr><td>uninstall</td><td>Remove service (requires sudo)</td></tr>
+        <tr><td>start</td><td>Start via systemctl</td></tr>
+        <tr><td>stop</td><td>Stop via systemctl</td></tr>
+        <tr><td>restart</td><td>Restart via systemctl</td></tr>
+        <tr><td>status</td><td>Check if service is running</td></tr>
+        <tr><td>logs</td><td>Follow journalctl logs</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>How It Works</h2>
+      <p>The monitor polls <code>/sys/class/power_supply/BAT0/status</code> and <code>/sys/class/power_supply/AC/online</code> every 5 seconds. When the battery is <strong>Full</strong> and AC is plugged in:</p>
+      <ol>
+        <li>Raises volume to 80%</li>
+        <li>Shows the wallpaper full-screen via <code>feh</code></li>
+        <li>Plays the alert sound in a loop</li>
+      </ol>
+      <p>All alerts stop automatically when the charger is unplugged.</p>
+    </section>
+
+    <div class="footer">
+      <a href="https://github.com/electrodragon/battery-monitor">electrodragon/battery-monitor</a>
+    </div>
+  </div>
+
+  <script>
+    function copyCmd(btn) {
+      const code = btn.previousElementSibling.textContent;
+      navigator.clipboard.writeText(code.trim()).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#3fb950';
+        setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

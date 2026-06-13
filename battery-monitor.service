@@ -1,0 +1,16 @@
+[Unit]
+Description=Battery Full Charger Alert Monitor
+After=graphical.target sound.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/battery-monitor/battery_monitor.py
+User=%USER%
+Restart=on-failure
+RestartSec=10
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=%h/.Xauthority
+Environment=PULSE_SERVER=unix:%h/.config/pulse/native
+
+[Install]
+WantedBy=default.target
