@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
 import sys
+import re
 import time
 import signal
+import shlex
 import subprocess
 import threading
 import logging
@@ -49,18 +51,28 @@ def get_ac_online():
 
 def set_volume(percent):
     try:
-        subprocess.run(
+        result = subprocess.run(
             ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{percent}%"],
             capture_output=True, text=True
         )
+        if result.returncode == 0:
+            log.info("Volume set to %d%% via pactl", percent)
+            return
     except FileNotFoundError:
-        try:
-            subprocess.run(
-                ["amixer", "-D", "pulse", "sset", "Master", f"{percent}%"],
-                capture_output=True, text=True
-            )
-        except FileNotFoundError:
-            log.warning("No volume control tool found (pactl/amixer)")
+        pass
+
+    try:
+        result = subprocess.run(
+            ["amixer", "-D", "pulse", "sset", "Master", f"{percent}%"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            log.info("Volume set to %d%% via amixer", percent)
+            return
+    except FileNotFoundError:
+        pass
+
+    log.warning("Failed to set volume to %d%% (pactl/amixer)", percent)
 
 
 def show_wallpaper():
@@ -75,6 +87,44 @@ def show_wallpaper():
     except FileNotFoundError:
         log.error("feh not found. Install it: sudo dnf install feh")
         return None
+
+
+def get_current_volume():
+    try:
+        result = subprocess.run(
+            ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            percent_line = result.stdout.strip().split("\n")[0]
+            if "/" in percent_line:
+                parts = percent_line.split("/")
+                if len(parts) >= 2:
+                    try:
+                        vol = int(parts[1].strip().rstrip("%"))
+                        log.info("Current volume: %d%% (from pactl)", vol)
+                        return vol
+                    except ValueError:
+                        pass
+    except Exception:
+        pass
+
+    try:
+        result = subprocess.run(
+            ["amixer", "-D", "pulse", "sget", "Master"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            match = re.search(r'(\d+)%', result.stdout)
+            if match:
+                vol = int(match.group(1))
+                log.info("Current volume: %d%% (from amixer)", vol)
+                return vol
+    except Exception:
+        pass
+
+    log.warning("Could not determine current volume (pactl/amixer)")
+    return None
 
 
 def play_sound_loop():
@@ -106,7 +156,17 @@ def play_sound_loop():
         )
         return proc
     except FileNotFoundError:
-        log.error("No audio player found (mpv/ffplay/paplay)")
+        pass
+
+    try:
+        proc = subprocess.Popen(
+            ["sh", "-c", f'while true; do aplay {shlex.quote(str(ALERT_SOUND))}; done'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return proc
+    except FileNotFoundError:
+        log.error("No audio player found (mpv/ffplay/paplay/aplay)")
         return None
 
 
@@ -119,24 +179,7 @@ def start_alert():
 
     log.info("Battery full & charger plugged — showing alert")
 
-    current_volume = None
-    try:
-        result = subprocess.run(
-            ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
-            capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            percent_line = result.stdout.strip().split("\n")[0]
-            if "/" in percent_line:
-                parts = percent_line.split("/")
-                if len(parts) >= 2:
-                    try:
-                        current_volume = int(parts[1].strip().rstrip("%"))
-                    except ValueError:
-                        pass
-    except Exception:
-        pass
-
+    current_volume = get_current_volume()
     if current_volume is not None and current_volume < 80:
         log.info("Volume is %d%%, raising to 80%%", current_volume)
         set_volume(80)

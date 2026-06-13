@@ -10,7 +10,8 @@ Restart=on-failure
 RestartSec=10
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=%h/.Xauthority
-Environment=PULSE_SERVER=unix:%h/.config/pulse/native
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=PULSE_SERVER=unix:/run/user/%U/pulse/native
 
 [Install]
 WantedBy=default.target
