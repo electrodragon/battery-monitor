@@ -16,7 +16,7 @@ SERVICE_SRC="battery-monitor.service"
 
 if [[ $EUID -ne 0 ]]; then
     echo "[!] This script must be run as root." >&2
-    echo "    Try: curl -fsSL 'https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/$REPO_BRANCH/install_battery_monitor.sh' | sudo bash" >&2
+    echo "    Try: curl -fsSL 'https://electrodragon.github.io/battery-monitor/install_battery_monitor.sh' | sudo bash" >&2
     exit 1
 fi
 

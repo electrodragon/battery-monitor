@@ -5,7 +5,7 @@ Alerts you with a full-screen wallpaper and looping sound when the laptop batter
 ## Quick Install
 
 ```bash
-curl -fsSL 'https://raw.githubusercontent.com/electrodragon/battery-monitor/main/install_battery_monitor.sh' | sudo bash
+curl -fsSL 'https://electrodragon.github.io/battery-monitor/install_battery_monitor.sh' | sudo bash
 ```
 
 After install, use `battery-monitor <command>` to control the service.
