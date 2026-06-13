@@ -42,9 +42,10 @@ for asset in battery_full_wallpaper.jpg battery_full_alert.wav; do
     fi
 done
 
-echo "[6/6] Enabling and starting service"
+echo "[6/6] Enabling and restarting service"
 systemctl daemon-reload
-systemctl enable --now "$SERVICE_NAME"
+systemctl enable "$SERVICE_NAME"
+systemctl restart "$SERVICE_NAME"
 
 echo ""
 echo "=== Installation complete ==="
