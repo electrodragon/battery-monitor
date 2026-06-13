@@ -225,7 +225,23 @@ def verify_assets():
     return True
 
 
+def fake_full():
+    if not verify_assets():
+        sys.exit(1)
+    log.info("Fake-full: simulating battery full alert")
+    start_alert()
+    try:
+        input("Press Enter to stop the fake-full alert...")
+    except (EOFError, KeyboardInterrupt):
+        pass
+    stop_alert()
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--fake-full":
+        fake_full()
+        return
+
     if not verify_assets():
         sys.exit(1)
 

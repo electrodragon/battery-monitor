@@ -16,6 +16,7 @@ USAGE
 COMMANDS
   help                Show this help message
   run                 Run the monitor in foreground (for testing)
+  --fake-full         Simulate a full-battery alert (wallpaper + sound)
   install             Install the service system-wide (requires sudo)
   uninstall           Remove the service from the system (requires sudo)
   status              Check if the service is running
@@ -47,6 +48,9 @@ case "${1:-help}" in
         ;;
     run)
         exec "$SCRIPT_DIR/battery_monitor.py"
+        ;;
+    --fake-full)
+        exec "$SCRIPT_DIR/battery_monitor.py" --fake-full
         ;;
     install)
         exec sudo "$SCRIPT_DIR/install.sh"
