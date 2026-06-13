@@ -4,6 +4,7 @@ import sys
 import re
 import time
 import signal
+import select
 import shlex
 import subprocess
 import threading
@@ -230,8 +231,19 @@ def fake_full():
         sys.exit(1)
     log.info("Fake-full: simulating battery full alert")
     start_alert()
+
+    with lock:
+        wp_proc = alert_processes[0] if alert_processes else None
+
+    log.info("Press Enter or close the wallpaper (q) to stop")
     try:
-        input("Press Enter to stop the fake-full alert...")
+        while True:
+            if wp_proc and wp_proc.poll() is not None:
+                log.info("Wallpaper closed — stopping alert")
+                break
+            if select.select([sys.stdin], [], [], 0.5)[0]:
+                sys.stdin.readline()
+                break
     except (EOFError, KeyboardInterrupt):
         pass
     stop_alert()
@@ -265,6 +277,14 @@ def main():
         elif not should_alert and was_alerting:
             stop_alert()
             was_alerting = False
+
+        if was_alerting:
+            with lock:
+                wp_proc = alert_processes[0] if alert_processes else None
+            if wp_proc and wp_proc.poll() is not None:
+                log.info("Wallpaper closed — stopping alert")
+                stop_alert()
+                was_alerting = False
 
         time.sleep(POLL_INTERVAL)
 
